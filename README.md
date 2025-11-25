@@ -9,6 +9,7 @@ This GitHub repository contains all the custom scripts and shell commands used i
 
 ## Data available
 Our HP functional annotation data is available via a GUI (https://jiadhuang0417.shinyapps.io/PA_HP/)
+
 All raw sequence files are uploaded to NCBI (GEO:[GSE256222](https:)).
 
 Processed files are uploaded to [Zenodo]().
