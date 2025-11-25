@@ -24,7 +24,9 @@ System requirement: Ubuntu 22.04; R version: 4.5.1.
 ## iModulon calculation
 
 The iModulon results generated are by iModulonMiner. Specifically:
+
 ICA Calculation: The core ICA decomposition, including the algorithm implementation and factor rotation, is handled by run_ica.sh in iModulonMiner.
+
 For an in-depth understanding of these foundational steps, please consult the iModulonminer documentation and source code. 
 
 ## Cite us
