@@ -2,12 +2,13 @@
 
 This GitHub repository contains all the custom scripts and shell commands used in our paper,
 
-**Global Characterizations of Hypothetical Proteins Reveal Function Modules and Virulence Factors in Pseudomonas aeruginosa**
+**Pan-genome Wide Functional Characterization of Hypothetical Proteins Reveals Module-specific Evolution Patterns in Pseudomonas aeruginosa**
 
 ## Graphic abstract
 ![abstract](abstract/annotation.png)
 
 ## Data available
+Our HP functional annotation data is available via a GUI (https://jiadhuang0417.shinyapps.io/PA_HP/)
 All raw sequence files are uploaded to NCBI (GEO:[GSE256222](https:)).
 
 Processed files are uploaded to [Zenodo]().
@@ -22,4 +23,7 @@ System requirement: Ubuntu 22.04; R version: 4.5.1.
 
 
 ## Cite us
+DOI available later~
+
+## LICENSE
 This project is licensed under the MIT License. See the LICENSE file for details.
