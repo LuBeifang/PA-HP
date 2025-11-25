@@ -6,7 +6,7 @@ mkdir -p cutsingle
 
 cat singleid | xargs -P 5 -I {} bash -c '
 n="{}"
-trim_galore -q 20 --phred33 --stringency 3 single/raw/${n}.fastq --gzip -o ./cutsingle \
+trim_galore -q 20 --illumina --length 20 --phred33 --stringency 3 single/raw/${n}.fastq --gzip -o ./cutsingle \
     --fastqc_args "-t 30 --outdir ./cutQC" -j 8
 '
 
@@ -15,7 +15,7 @@ mkdir -p cutpair
 
 cat pairid | xargs -P 5 -I {} bash -c '
 n="{}"
-trim_galore -q 20 --paired --phred33 --stringency 3 paired/raw/${n}_1.fastq paired/raw/${n}_2.fastq --gzip -o ./cutpair \
+trim_galore -q 20 --illumina --length 20 --paired --phred33 --stringency 3 paired/raw/${n}_1.fastq paired/raw/${n}_2.fastq --gzip -o ./cutpair \
     --fastqc_args "-t 30 --outdir ./cutQC" -j 8
 '
 
@@ -54,3 +54,10 @@ star_align_pair() {
 export -f star_align_pair
 
 cat pairid | xargs -P 3 -I {} bash -c 'star_align_pair "$@"' _ {}
+
+
+nohup ls finalRNAbam/*.bam | xargs -P 10 -I {} bash -c \
+'featureCounts -a genomic.gtf -o countfile/$(basename {}).counts.txt -p -t gene -g locus_tag -T 20 "{}"' >count.log &
+
+
+
