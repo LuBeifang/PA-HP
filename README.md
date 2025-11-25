@@ -21,7 +21,11 @@ If you have any further requests, please contact xindeng@cityu.edu.hk. We are pl
 System requirement: Ubuntu 22.04; R version: 4.5.1.
 
 **Notes:** We highly recommend creating a separate conda environment to manage the following software tools.
+## iModulon calculation
 
+The iModulon results generated are by iModulonMiner. Specifically:
+ICA Calculation: The core ICA decomposition, including the algorithm implementation and factor rotation, is handled by run_ica.sh in iModulonMiner.
+For an in-depth understanding of these foundational steps, please consult the iModulonminer documentation and source code. 
 
 ## Cite us
 DOI available later~
