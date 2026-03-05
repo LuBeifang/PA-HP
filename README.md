@@ -12,7 +12,7 @@ Our HP functional annotation data is available via a GUI (https://jiadhuang0417.
 
 All raw sequence files are uploaded to NCBI (GEO:[GSE256222](https:)).
 
-Processed files are uploaded to [Zenodo]().
+Processed DEG files and ICA matrix are uploaded to [Zenodo](10.5281/zenodo.18872828).
 
 If you have any further requests, please contact xindeng@cityu.edu.hk. We are pleased to help!
 
