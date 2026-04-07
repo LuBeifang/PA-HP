@@ -105,7 +105,7 @@ for (i in unique(lane$lane)[1:22]){
 ### cor density
 ```{r}
 matrix <- read.csv("/Users/lubeifang/Desktop/PA_HP/files/our_meanTPM.csv")
-
+summary(cor_matrix$cor)
 ggplot(cor_matrix,aes(x=cor))+
   geom_density(fill = "steelblue", alpha = 0.8)+
   geom_boxplot(aes(y=0),width = 0.5,fill = "grey", size = 0.4)+

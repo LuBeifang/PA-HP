@@ -1,0 +1,33 @@
+# PLOT
+
+## HP in module
+```{r}
+HP <- read.csv("/Users/lubeifang/Desktop/PA_HP/files/HP_mu.csv")
+data <- read.csv("/Users/lubeifang/Desktop/HP_430_iModulon.csv")
+
+merged_data <- merge(HP, data, by.y = "locus", by.x = "HP2080")
+length(unique(merged_data$HP2080))
+```
+
+## Compare HP in differnt annotation
+```{r}
+library(UpSetR)
+HP_anno <- read.csv("/Users/lubeifang/Desktop/HP_anno_final.csv")
+x = list(a=HP_anno[HP_anno$GO.term != "#N/A",]$HP.genes,
+         b=HP_anno[HP_anno$Virulence.pathway != "#N/A",]$HP.genes,
+         b=HP_anno[HP_anno$ICA.perspective.1 != "#N/A",]$HP.genes,
+         b=HP_anno[HP_anno$ICA.perspective.2 != "#N/A",]$HP.genes)
+ggVennDiagram(x, category.names = c("GO term", "Virulence pathway", "ICA perspective 1", "ICA perspective 2"),
+              label = "count") +
+                scale_fill_gradient(low = "white", high = "#eb6483")
+ggsave("/Users/lubeifang/Desktop/HP_anno_venn.pdf", width = 6, height = 6)
+
+ggVennDiagram(x, category.names = c("GO term", "Virulence pathway", "ICA perspective 1", "ICA perspective 2"),
+              force_upset = T) 
+
+pdf("/Users/lubeifang/Desktop/HP_anno_upset.pdf", width = 7, height = 4)
+upset(fromList(x),order.by = "freq", 
+    keep.order = TRUE)
+dev.off()
+```
+

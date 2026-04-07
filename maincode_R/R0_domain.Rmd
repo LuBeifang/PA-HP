@@ -1,0 +1,83 @@
+# HP domain
+```{R}
+library(dplyr)
+rm(list=ls())
+
+
+domain <- read.csv("/Users/lubeifang/Desktop/PA_HP/files/domain_results.csv")
+domain <- domain[domain$Evalue != 0,]
+
+table(domain$File)
+length(unique(domain$File))
+table(domain$Domain)
+length(unique(domain$Domain))
+
+ggplot(domain, aes(x=Domain, y=-log10(Evalue), color=File)) +
+  geom_point() +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1),
+        legend.position = "none") +
+  labs(title="Domain E-value Distribution", x="Domain", y="-log10(E-value)") +
+  scale_color_discrete(name="File") +
+  geom_text(aes(label=ifelse(-log10(Evalue) > 3, as.character(File), '')),
+            hjust=0, vjust=0, size=3, check_overlap = TRUE)
+# ggsave("/Users/lubeifang/Desktop/PA_HP/Figures/F1_deg/domain_Evalue_distribution.pdf", width=16, height=6)
+
+ggplot(domain, aes(x=File, y=-log10(Evalue), color=Domain)) +
+  geom_point() +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1),
+        legend.position = "none") +
+  labs(title="HP E-value Distribution", x="HP", y="-log10(E-value)") +
+  scale_color_discrete(name="File") +
+  geom_text(aes(label=ifelse(-log10(Evalue) > 3, as.character(Domain), '')),
+            hjust=0, vjust=0, size=3, check_overlap = TRUE)
+# ggsave("/Users/lubeifang/Desktop/PA_HP/Figures/F1_deg/HP_Evalue_distribution.pdf", width=16, height=6)
+```
+## side by side
+```{r}
+HP <- read.csv("/Users/lubeifang/Desktop/PA_HP/files/pass_faill_HP.csv")
+PA_anno <- read.csv("/Users/lubeifang/Desktop/BIOTOOLS/ref/PA_geneanno.csv", header = T)
+
+
+# gene length
+pass <- merge(HP, PA_anno, by.x = "pass", by.y = "ID")
+pass$length <- pass$end - pass$start + 1
+fail <- merge(HP, PA_anno, by.x = "fail", by.y = "ID")
+fail$length <- fail$end - fail$start + 1
+
+length <- rbind(data.frame(name = "pass", length = pass$end - pass$start + 1), data.frame(name = "fail", length = fail$end - fail$start + 1))
+ggplot(length, aes(x=name, y=log10(length), fill=name)) +
+  geom_boxplot() +
+  theme_bw() +
+  labs(title="Gene Length Distribution", x="Group", y="Gene Length") +
+  scale_fill_manual(values=c("pass"="#C6AEBA", "fail"="#A9A9A9")) +
+  theme(legend.position = "none") +
+  stat_compare_means(comparisons = list(c("fail", "pass")), method = "wilcox.test",label = "p.format")
+# ggsave("/Users/lubeifang/Desktop/gene_length_comparison.pdf", width=2.5, height=3)
+
+
+
+
+
+# domain
+domain_yes <- merge(HP, domain, by.x = "pass", by.y = "File")
+domain_no <- merge(HP, domain, by.x = "fail", by.y = "File")
+
+length(unique(domain_yes$pass))
+length(unique(domain_no$fail))
+length(unique(domain$File))
+
+
+
+# operon
+tbl <- matrix(c(542,623,350,565), nrow=2, byrow=TRUE,
+dimnames=list(c("in","not_in"), c("single","operon")))
+tbl
+chisq.test(tbl, correct=FALSE) # Pearson χ²
+fisher.test(tbl) # Fisher 精确检验（可做为稳健性检查）
+prop.test(c(542,350), c(542+623, 350+565)) # 比较single比例差异
+
+```
+
+    

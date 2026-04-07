@@ -30,6 +30,8 @@ PA_go_clu <- as.data.frame(PAgo[,c(5,7)]) %>% distinct()
 
 exprSet=counts[,7:ncol(counts)]
 rownames(exprSet) <- counts[,1]
+
+
 ```
 
 ### DEG for each mutant
@@ -72,6 +74,44 @@ for (i in unique(lane$lane)[1:22]){
 }
 # deg_list <- deg_list[,c(1:8,14)]
 # write.csv(deg_list,"/Users/lubeifang/Desktop/PA_HP/files/HP_deg_list.csv",row.names = F)
+HP_deg_list <- read.csv("/Users/lubeifang/Desktop/PA_HP/files/HP_deg_list.csv")
+summary(abs(HP_deg_list$log2FoldChange))
+summary(HP_deg_list$lfcSE)
+```
+### replicates quality
+```{r}
+correlation <- data.frame()
+for (i in unique(lane$lane)[1:22]){
+  print(i)
+  for (mu in unique(lane[lane$lane == i,]$index)){
+    print(mu)
+    mu_names <- lane[lane$lane == i & lane$index == mu,]$name
+    wt_names <- lane[lane$lane == "WT" & lane$mu == i,]$name
+    colname <- c(wt_names, mu_names)
+    OE <- exprSet[,colname]
+    # TPM
+    # OE <- sweep(OE, 2, colSums(OE), FUN = "/") * 1e6
+    cor <- cor(OE[,3:4], method = "pearson")
+    correlation <- rbind(correlation, data.frame(name = mu, cor = cor[1,2]))
+    if (wt_names[1] %in% correlation$name){
+      next
+    }
+    cor <- cor(OE[,3:4], method = "pearson")
+    correlation <- rbind(correlation, data.frame(name = wt_names[1], cor = cor[1,2]))
+  }
+}
+
+summary(correlation$cor)
+#plot
+ggplot(correlation, aes(x=cor)) +
+  geom_histogram(binwidth = 0.01) +
+  labs(
+    y = "Density",
+    x = "Pearson Correlation Coefficient between Replicates"
+  ) +
+  theme_bw() +
+  theme()
+ggsave("/Users/lubeifang/Desktop/replicate_correlation.pdf",width = 3, height = 3)
 ```
 
 
@@ -451,240 +491,3 @@ ggplot(exp, aes(x=Count, y=Description, size = frac, color = name)) +
 ggsave("/Users/lubeifang/Desktop/PA_HP/Figures/F1_deg/PA3998_0392_GO.pdf",width = 6, height = 4)
 ```
 
-
-
-<!-- ### Assign top 2 GO term to HP functions -->
-<!-- ```{r} -->
-<!-- GO_list <- read.csv("/Users/lubeifang/Desktop/PA_HP/files/HP_GO_list_all.csv") -->
-<!-- term_list <- as.data.frame(table(GO_list$Description)) -->
-<!-- # cellular_component -->
-<!-- go_top2 <- GO_list %>% -->
-<!--   subset(Description != "ribosome") %>% -->
-<!--   subset(Description != "structural constituent of ribosome") %>% -->
-<!--   subset(Description != "translation") %>% -->
-<!--   arrange(name, desc(frac)) %>%               -->
-<!--   group_by(name) %>% -->
-<!--   slice_max(order_by = frac, n = 2, with_ties = FALSE) %>%  #  -->
-<!--   ungroup()  -->
-
-<!-- id_df <- data.frame(table(go_top2$Description)) -->
-<!-- go_top2 <- merge(go_top2, id_df, by.x="Description",by.y="Var1") -->
-
-<!-- link_df <- go_top2 %>% -->
-<!--   group_by(name) %>% -->
-<!--   summarise(ID_list = list(unique(Description)), .groups = "drop") %>% -->
-<!--   mutate(pairs = map(ID_list, ~ { -->
-<!--     x <- .x -->
-<!--     if(length(x) == 1) { -->
-<!--       # 自连接 -->
-<!--       data.frame(V1 = x, V2 = "HPs have no second GO", stringsAsFactors = FALSE) -->
-<!--     } else { -->
-<!--       # 两两组合 -->
-<!--       as.data.frame(t(combn(x, 2)), stringsAsFactors = FALSE) -->
-<!--     } -->
-<!--   })) %>% -->
-<!--   unnest(pairs) -->
-
-<!-- edges <- as.data.frame(table(as.character(link_df$V1), as.character(link_df$V2))) %>% -->
-<!--   subset(Freq > 5) -->
-<!-- sum(edges$Freq) -->
-
-<!-- pdf("/Users/lubeifang/Desktop/chord_go_all.pdf",width = 10, height=10) -->
-<!-- chordDiagram(edges, grid.col = NULL, transparency = 0.5) -->
-<!-- dev.off() -->
-<!-- ``` -->
-
-
-<!-- ```{r} -->
-<!-- # cellular_component -->
-<!-- go_top2_cc <- go_top2[go_top2$Namespace == "cellular_component",] -->
-
-<!-- id_df <- data.frame(table(go_top2_cc$Description)) -->
-<!-- go_top2_cc <- merge(go_top2_cc, id_df, by.x="Description",by.y="Var1") -->
-
-<!-- link_df <- go_top2_cc %>% -->
-<!--   group_by(name) %>% -->
-<!--   summarise(ID_list = list(unique(Description)), .groups = "drop") %>% -->
-<!--   mutate(pairs = map(ID_list, ~ { -->
-<!--     x <- .x -->
-<!--     if(length(x) == 1) { -->
-<!--       # 自连接 -->
-<!--       data.frame(V1 = x, V2 = "HPs have no second GO in cellular component category", stringsAsFactors = FALSE) -->
-<!--     } else { -->
-<!--       # 两两组合 -->
-<!--       as.data.frame(t(combn(x, 2)), stringsAsFactors = FALSE) -->
-<!--     } -->
-<!--   })) %>% -->
-<!--   unnest(pairs) -->
-
-<!-- edges <- as.data.frame(table(as.character(link_df$V1), as.character(link_df$V2))) %>% -->
-<!--   subset(Freq >0) -->
-<!-- sum(edges$Freq) -->
-
-<!-- pdf("/Users/lubeifang/Desktop/chord_go_cc.pdf",width = 10, height=10) -->
-<!-- chordDiagram(edges, grid.col = NULL, transparency = 0.5) -->
-<!-- dev.off() -->
-
-<!-- # molecular_function -->
-<!-- go_top2_mf <- go_top2[go_top2$Namespace == "molecular_function",] -->
-
-<!-- id_df <- data.frame(table(go_top2_mf$Description)) -->
-<!-- go_top2_mf <- merge(go_top2_mf, id_df[id_df$Freq>=10,], by.x="Description",by.y="Var1") -->
-
-<!-- length(unique(go_top2_mf$name)) -->
-<!-- link_df <- go_top2_mf %>% -->
-<!--   group_by(name) %>% -->
-<!--   summarise(ID_list = list(unique(Description)), .groups = "drop") %>% -->
-<!--   mutate(pairs = map(ID_list, ~ { -->
-<!--     x <- .x -->
-<!--     if(length(x) == 1) { -->
-<!--       # 自连接 -->
-<!--       data.frame(V1 = x, V2 = "HPs have no second GO in cellular molecular function", stringsAsFactors = FALSE) -->
-<!--     } else { -->
-<!--       # 两两组合 -->
-<!--       as.data.frame(t(combn(x, 2)), stringsAsFactors = FALSE) -->
-<!--     } -->
-<!--   })) %>% -->
-<!--   unnest(pairs) -->
-
-<!-- edges <- as.data.frame(table(as.character(link_df$V1), as.character(link_df$V2))) %>% -->
-<!--   subset(Freq >0) -->
-<!-- sum(edges$Freq) -->
-
-<!-- pdf("/Users/lubeifang/Desktop/chord_go_mf.pdf",width = 10, height=10) -->
-<!-- chordDiagram(edges, grid.col = NULL, transparency = 0.5) -->
-<!-- dev.off() -->
-
-<!-- # biological_process -->
-<!-- go_top2_bp <- go_top2[go_top2$Namespace == "biological_process",] -->
-
-<!-- id_df <- data.frame(table(go_top2_bp$Description)) -->
-<!-- go_top2_bp <- merge(go_top2_bp, id_df[id_df$Freq>=10,], by.x="Description",by.y="Var1") -->
-
-<!-- link_df <- go_top2_bp %>% -->
-<!--   group_by(name) %>% -->
-<!--   summarise(ID_list = list(unique(Description)), .groups = "drop") %>% -->
-<!--   mutate(pairs = map(ID_list, ~ { -->
-<!--     x <- .x -->
-<!--     if(length(x) == 1) { -->
-<!--       # 自连接 -->
-<!--       data.frame(V1 = x, V2 = "HPs have no second GO in cellular biological process", stringsAsFactors = FALSE) -->
-<!--     } else { -->
-<!--       # 两两组合 -->
-<!--       as.data.frame(t(combn(x, 2)), stringsAsFactors = FALSE) -->
-<!--     } -->
-<!--   })) %>% -->
-<!--   unnest(pairs) -->
-<!-- edges <- as.data.frame(table(as.character(link_df$V1), as.character(link_df$V2))) %>% -->
-<!--   subset(Freq >0) -->
-<!-- sum(edges$Freq) -->
-
-<!-- pdf("/Users/lubeifang/Desktop/chord_go_bp.pdf",width = 10, height=10) -->
-<!-- chordDiagram(edges, grid.col = NULL, transparency = 0.5) -->
-<!-- dev.off() -->
-<!-- ``` -->
-
-<!-- ## GO term relation -->
-<!-- ```{r} -->
-<!-- GO_list <- read.csv("/Users/lubeifang/Desktop/PA_HP/files/HP_GO_list.csv") -->
-<!-- GO_list <- GO_list[GO_list$cate == "all",] -->
-
-<!-- result <- GO_list %>% -->
-<!--   group_by(name) %>% -->
-<!--   filter(n_distinct(Description) > 1) %>% -->
-<!--   summarise(Category_combinations = list(combn(unique(Description), 2, simplify = FALSE)), .groups = 'drop') %>% -->
-<!--   unnest(Category_combinations) %>% -->
-<!--   # 将组合转换为字符型，便于计数 -->
-<!--   mutate(Combination = sapply(Category_combinations, paste, collapse = " + ")) -->
-
-<!-- plot <- as.data.frame(table(result$Combination)) -->
-<!-- write.csv(plot,"/Users/lubeifang/Desktop/PA_HP/files/2GOterms_relation_results.csv",row.names = F) -->
-
-<!-- # 准备chordDiagram需要的数据格式 -->
-<!-- chord_data <- data.frame(from = sapply(strsplit(as.character(plot$Var1), " \\+ "), `[`, 1),  -->
-<!--                          to = sapply(strsplit(as.character(plot$Var1), " \\+ "), `[`, 2),  -->
-<!--                          freq = plot$Freq) -->
-<!-- chord_data_f <- chord_data[chord_data$freq > 20,] -->
-
-<!-- pdf("/Users/lubeifang/Desktop/chord_goCluster_all.pdf",width = 10, height=10) -->
-<!-- chordDiagram(chord_data_f, grid.col = NULL, transparency = 0.5) -->
-<!-- dev.off() -->
-
-
-<!-- # annotate with cluster -->
-<!-- manual_go <- read.csv("/Users/lubeifang/Desktop/PA_HP/files/manual_GO_cluster.csv") -->
-<!-- chord_data_c <- merge(chord_data, manual_go, by.x = "from", by.y = "GO", all.x = TRUE) -->
-<!-- chord_data_c <- merge(chord_data_c, manual_go, by.x = "to", by.y = "GO", all.x = TRUE) -->
-
-<!-- Virulence_Stress <- chord_data_c[(chord_data_c$Category.x == "Virulence & Pathogenesis" &  -->
-<!--                                    chord_data_c$Category.y == "Stress Response") |  -->
-<!--                                    (chord_data_c$Category.y == "Virulence & Pathogenesis" &  -->
-<!--                                    chord_data_c$Category.x == "Stress Response") ,] -->
-<!-- ``` -->
-
-
-
-
-<!-- ## Manual GO cluster  -->
-<!-- ```{r} -->
-<!-- manual_go <- read.csv("/Users/lubeifang/Desktop/PA_HP/files/manual_GO_cluster.csv") -->
-<!-- GO_list <- read.csv("/Users/lubeifang/Desktop/PA_HP/files/HP_GO_list.csv") -->
-<!-- GO_list <- GO_list[GO_list$cate == "all",] %>% -->
-<!--   merge( manual_go,by.x="Description",by.y="GO") -->
-<!-- term_list <- as.data.frame(table(GO_list$Category)) -->
-
-<!-- go_plot <- merge(GO_list, term_list, by.x="Category",by.y="Var1") %>% -->
-<!--   arrange(pvalue) -->
-<!-- go_plot <- go_plot[!duplicated(go_plot[,c("Category","name")]),] -->
-
-<!-- test <- as.data.frame(table(go_plot$name)) -->
-<!-- test2 <- as.data.frame(table(go_plot$Category)) -->
-<!-- sum(test2$Freq) -->
-
-<!-- result <- go_plot %>% -->
-<!--   group_by(name) %>% -->
-<!--   # 确保每组有超过一个Category -->
-<!--   filter(n_distinct(Category) > 1) %>% -->
-<!--   # 计算每个name分组下Category的所有可能的两两组合 -->
-<!--   summarise(Category_combinations = list(combn(unique(Category), 2, simplify = FALSE)), .groups = 'drop') %>% -->
-<!--   unnest(Category_combinations) %>% -->
-<!--   # 将组合转换为字符型，便于计数 -->
-<!--   mutate(Combination = sapply(Category_combinations, paste, collapse = " + ")) -->
-
-<!-- plot <- as.data.frame(table(result$Combination)) -->
-<!-- write.csv(plot,"/Users/lubeifang/Desktop/PA_HP/files/manual_GO_cluster_results.csv",row.names = F) -->
-
-<!-- # 准备chordDiagram需要的数据格式 -->
-<!-- chord_data <- data.frame(from = sapply(strsplit(as.character(plot$Var1), " \\+ "), `[`, 1),  -->
-<!--                          to = sapply(strsplit(as.character(plot$Var1), " \\+ "), `[`, 2),  -->
-<!--                          freq = plot$Freq) -->
-
-
-<!-- pdf("/Users/lubeifang/Desktop/chord_goCluster_all.pdf",width = 10, height=10) -->
-<!-- chordDiagram(chord_data, grid.col = NULL, transparency = 0.5) -->
-<!-- dev.off() -->
-<!-- ``` -->
-
-<!-- ### example of GO -->
-<!-- ```{r} -->
-<!-- PA2151 <- go_plot[go_plot$name == "PA2151",] -->
-
-<!-- convert_to_decimal <- function(fraction) { -->
-<!--   parts <- strsplit(fraction, "/")[[1]] -->
-<!--   numerator <- as.numeric(parts[1]) -->
-<!--   denominator <- as.numeric(parts[2]) -->
-<!--   return (numerator / denominator) -->
-<!-- } -->
-
-<!-- PA2151$GeneRatio <- sapply(PA2151$GeneRatio , convert_to_decimal) -->
-<!-- # plot bubble GO -->
-<!-- ggplot(PA2151, aes(x=Count, y=log10(pvalue), size = GeneRatio, color = Category)) + -->
-<!--   geom_point(alpha=0.5) + -->
-<!--   scale_size(range = c(10, 20)) + -->
-<!--   theme_bw() + -->
-<!--   theme(legend.position = "right") + -->
-<!--   geom_text_repel(aes(label = Category), size = 2, vjust = 0,max.overlaps = 100) +  -->
-<!--   # scale_color_brewer(palette = 1) + -->
-<!--   xlim(0,25)+ -->
-<!--   ylim(-16,-2) -->
-<!-- ``` -->

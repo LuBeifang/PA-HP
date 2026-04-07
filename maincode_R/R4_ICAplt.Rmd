@@ -321,3 +321,10 @@ p3<-ggplot(d,aes(x=Var1, y=Freq)) +
 p <- (p2 / p3)
 ggsave('/Users/lubeifang/Desktop/corr_number.pdf',p,height = 3.6,width = 4)
 ```
+
+
+# porpotion
+```{r}
+
+```
+

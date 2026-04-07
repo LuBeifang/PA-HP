@@ -2,6 +2,7 @@
 ## Virulence pathway
 ```{r}
 rm(list=ls())
+library(patchwork)
 deg_list <- read.csv("/Users/lubeifang/Desktop/PA_HP/files/HP_deg_list.csv")
 deg_count <-  data.frame(table(deg_list$mu_name))
 colnames(deg_count) <- c("Var1","deg_count")
@@ -10,7 +11,7 @@ virus <- read.csv("/Users/lubeifang/Desktop/PA_HP/files/PA_pathway.csv")
 unique(virus$Product)
 virus_len <- data.frame(table(virus$Pathway))
 
-ggplot(virus_len,aes(x=Var1,y=Freq,fill=Var1)) +
+p1<-ggplot(virus_len,aes(x=Var1,y=Freq,fill=Var1)) +
   geom_bar(stat = "identity") +
   theme_bw() +
   theme(panel.grid.major = element_blank(),
@@ -70,7 +71,7 @@ library(ggrepel)
 count <- count %>%
   group_by(Pathway) %>%  # 按Pathway分组
   arrange(desc(p)) %>%  # 按p值升序排列
-  mutate(top5 = ifelse(row_number() <= 5, "yes", NA))  # 为前5个添加标签
+  mutate(top5 = ifelse(row_number() <= 2, "yes", NA))  # 为前5个添加标签
 count$label <- ifelse(!is.na(count$top5), count$mu_name, NA)
 
 ggplot(count,aes(x=Pathway,y=p,fill=Pathway)) +
@@ -91,18 +92,177 @@ ggplot(count,aes(x=Pathway,y=p,fill=Pathway)) +
 # ggsave("/Users/lubeifang/Desktop/PA_HP/Figures/F2_vir/HPinPathway_violin.pdf",width = 6, height = 4)
 
 num <- as.data.frame(table(count$Pathway))
-ggplot(num,aes(x=Var1,y=Freq,fill=Var1)) +
+p2<-ggplot(num,aes(x=Var1,y=Freq,fill=Var1)) +
   geom_bar(stat = "identity") +
   theme_bw() +
   theme(panel.grid.major = element_blank(),
         panel.grid.minor = element_blank(),
         legend.position = "none") +
-  scale_fill_brewer(palette=9)+
+  scale_fill_brewer(palette=2)+
   geom_text(aes(label = Freq), hjust = -0.3, size = 3)+
   coord_flip() +
   xlab("")
+p <- p1/p2
+ggsave("/Users/lubeifang/Desktop/PA_HP/Figures/F2_vir/HPinPathway_num.pdf",p,width = 6, height = 8)
 
-num <- as.data.frame(table(count[count$p>0.3,]$Pathway))
+# num <- as.data.frame(table(count[count$p>0.3,]$Pathway))
+# sum(num$Freq)
+# length(unique(count[count$p>0.3,]$mu_name))
+# ggplot(num,aes(x=Var1,y=Freq,fill=Var1)) +
+#   geom_bar(stat = "identity") +
+#   theme_bw() +
+#   theme(panel.grid.major = element_blank(),
+#         panel.grid.minor = element_blank(),
+#         legend.position = "none") +
+#   scale_fill_brewer(palette=2)+
+#   geom_text(aes(label = Freq), hjust = -0.3, size = 3)+
+#   xlab("")
+# # ggsave("/Users/lubeifang/Desktop/PA_HP/Figures/F2_vir/HPinPathway_p0,3.pdf",width = 3, height = 4)
+# 
+# count[count$p>0.3,]
+```
+
+##Normalize
+### normal distribution
+```{r}
+results <- count %>%
+  group_by(Pathway) %>%
+  summarise(
+    mean_p = mean(p),  # 计算均值
+    sd_p = sd(p),      # 计算标准差
+    right_tail_cutoff = qnorm(0.99, mean = mean(p), sd = sd(p)) # 计算 95% 分位数
+  )
+
+# 创建拟合曲线数据
+curve_data <- count %>%
+  group_by(Pathway) %>%
+  summarise(
+    mean_p = mean(p),
+    sd_p = sd(p)
+  ) %>%
+  rowwise() %>%
+  mutate(
+    x = list(seq(min(count$p), max(count$p), length.out = 100)), # x 轴范围
+    y = list(dnorm(x, mean = mean_p, sd = sd_p))              # 正态分布 y 值
+  ) %>%
+  unnest(cols = c(x, y)) # 展开数据
+
+# 绘制拟合曲线和原始点
+ggplot(count, aes(x = p)) +
+  geom_density(aes(fill = Pathway), alpha = 0.5) +  # 原始密度分布
+  geom_line(data = curve_data, aes(x = x, y = y, color = Pathway), size = 1) +  # 拟合曲线
+  geom_vline(data = results, aes(xintercept = mean_p, color = Pathway), linetype = "dashed") + # 标注均值
+  facet_wrap(~Pathway, scales = "free") +  # 按 Pathway 分面
+  theme_minimal() +
+  labs(
+    title = "Fitted Normal Distribution for Each Pathway",
+    x = "p (Ratio)",
+    y = "Density"
+  ) +
+  theme(legend.position = "bottom")
+# ggsave("/Users/lubeifang/Desktop/PA_HP/Figures/F2_vir/HPinPathway_normal.pdf", width = 8, height = 6)
+
+data_with_tail <- count %>%
+  left_join(results, by = "Pathway") %>%
+  mutate(is_right_tail = ifelse(p > right_tail_cutoff, TRUE, FALSE)) %>%
+  mutate(label = ifelse(is_right_tail, mu_name, NA))
+write.csv(data_with_tail,"/Users/lubeifang/Desktop/HPinViru_path_with_tail.csv",row.names = F)
+table(data_with_tail$is_right_tail)
+
+ggplot(data_with_tail,aes(x=Pathway,y=p,fill=Pathway)) +
+  geom_point(position = position_jitter(width = 0.2),size = 2, color = ifelse(data_with_tail$is_right_tail, "pink", NA), alpha = 0.4) +
+  geom_violin(color = NA,width=1.5) +
+  theme_bw() +
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        legend.position = "none") +
+  geom_text_repel(data = count, aes(label = label), 
+                   size = 3, 
+                   box.padding = 0.35, 
+                   point.padding = 0.5,
+                   segment.color = 'grey50',
+                    min.segment.length = 0) +
+  scale_fill_manual(values = MetBrewer::met.brewer("Morgenstern", 7)) +
+  coord_flip() 
+  # facet_wrap(~Pathway, scales = "free")
+ggsave("/Users/lubeifang/Desktop/PA_HP/Figures/F2_vir/HPinPathway_violin.pdf", width = 8, height = 6)
+
+```
+
+###lognorm
+```{r}
+# Log-normal分布拟合
+results <- count %>%
+  group_by(Pathway) %>%
+  summarise(
+    meanlog_p = mean(log(p)),  # log均值
+    sdlog_p = sd(log(p)),      # log标准差
+    right_tail_cutoff = qlnorm(0.95, meanlog = mean(log(p)), sdlog = sd(log(p))) # 99%分位数
+  )
+
+# 创建拟合曲线数据
+curve_data <- count %>%
+  group_by(Pathway) %>%
+  summarise(
+    meanlog_p = mean(log(p)),
+    sdlog_p = sd(log(p))
+  ) %>%
+  rowwise() %>%
+  mutate(
+    x = list(seq(min(count$p) + 1e-6, max(count$p), length.out = 100)),
+    y = list(dlnorm(x, meanlog = meanlog_p, sdlog = sdlog_p))  # Log-normal密度
+  ) %>%
+  unnest(cols = c(x, y))
+
+# 拟合曲线图
+ggplot(count, aes(x = p)) +
+  geom_density(aes(fill = Pathway), alpha = 0.5) +
+  geom_line(data = curve_data, aes(x = x, y = y, color = Pathway), size = 1) +
+  geom_vline(data = results, aes(xintercept = exp(meanlog_p), color = Pathway), 
+             linetype = "dashed") +
+  facet_wrap(~Pathway, scales = "free") +
+  theme_minimal() +
+  labs(
+    title = "Fitted Log-Normal Distribution for Each Pathway",
+    x = "p (Ratio)",
+    y = "Density"
+  ) +
+  theme(legend.position = "bottom")
+ggsave("/Users/lubeifang/Desktop/PA_HP/Figures/F2_vir/Pathway_lognorm.pdf", width = 8, height = 6)
+
+# 标注right tail
+data_with_tail <- count %>%
+  left_join(results, by = "Pathway") %>%
+  mutate(
+    is_right_tail = ifelse(p > right_tail_cutoff, TRUE, FALSE),
+    label = ifelse(is_right_tail, mu_name, NA)
+  )
+
+write.csv(data_with_tail, "/Users/lubeifang/Desktop/HPinViru_path_with_tail.csv", row.names = FALSE)
+table(data_with_tail$is_right_tail)
+
+# Violin图
+ggplot(data_with_tail,aes(x=Pathway,y=p,fill=Pathway)) +
+  geom_point(position = position_jitter(width = 0.2),size = 2, color = ifelse(data_with_tail$is_right_tail, "pink", NA), alpha = 0.4) +
+  geom_violin(color = NA,width=1.5) +
+  theme_bw() +
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        legend.position = "none") +
+  geom_text_repel(data = count, aes(label = label), 
+                   size = 3, 
+                   box.padding = 0.35, 
+                   point.padding = 0.5,
+                   segment.color = 'grey50',
+                    min.segment.length = 0) +
+  scale_fill_manual(values = MetBrewer::met.brewer("Morgenstern", 7)) +
+  coord_flip() 
+
+ggsave("/Users/lubeifang/Desktop/PA_HP/Figures/F2_vir/HPinPathway_violin.pdf", width = 8, height = 6)
+
+
+
+num <- as.data.frame(table(data_with_tail[data_with_tail$is_right_tail,]$Pathway))
 sum(num$Freq)
 length(unique(count[count$p>0.3,]$mu_name))
 ggplot(num,aes(x=Var1,y=Freq,fill=Var1)) +
@@ -114,9 +274,7 @@ ggplot(num,aes(x=Var1,y=Freq,fill=Var1)) +
   scale_fill_brewer(palette=2)+
   geom_text(aes(label = Freq), hjust = -0.3, size = 3)+
   xlab("")
-ggsave("/Users/lubeifang/Desktop/PA_HP/Figures/F2_vir/HPinPathway_p0,3.pdf",width = 3, height = 4)
-
-count[count$p>0.3,]
+# ggsave("/Users/lubeifang/Desktop/PA_HP/Figures/F2_vir/HPinPathway_p0,3.pdf",width = 3, height = 4)
 ```
 
 
@@ -237,7 +395,7 @@ for (i in  unique(specialized$mu_name)) {
 
 #### upset
 ```{r}
-count <- read.csv("/Users/lubeifang/Desktop/PA_HP/files/HPinViru_path.csv")
+count <- data_with_tail[data_with_tail$is_right_tail,]
 unique(count$Pathway)
 x <- list(EPS_Biofilm = count[count$Pathway=="EPS_Biofilm",]$mu_name,
           MIC= count[count$Pathway=="MIC",]$mu_name,
