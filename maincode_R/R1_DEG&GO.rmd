@@ -350,15 +350,14 @@ for (i in unique(GO_list$name)){
     test <- GO_list[GO_list$name == i,]
     
     if (nrow(test) > 1){
-        # 使用 tryCatch 包围可能产生错误的代码
+        # Use tryCatch find error
         p <- tryCatch({
             enrichmentNetwork(test, plotOnly = FALSE)$clusters
         }, error = function(e) {
-            cat("Error with", i, ": ", e$message, "\n")  # 打印错误信息
-            return(NULL)  # 返回NULL，跳过这次循环的后续代码
+            cat("Error with", i, ": ", e$message, "\n")  
+            return(NULL)  
         })
         
-        # 如果p不是NULL，继续执行后续代码
         if (!is.null(p)) {
             GO_enrich <- rbind(GO_enrich, data.frame(name = i, as.data.frame(p)))
         }
@@ -385,18 +384,15 @@ go_plot <- GO_enrich[!duplicated(GO_enrich[,c("Cluster","name")]),]
 
 result <- go_plot %>%
   group_by(name) %>%
-  # 确保每组有超过一个Category
   filter(n_distinct(Cluster) > 1) %>%
-  # 计算每个name分组下Category的所有可能的两两组合
   summarise(Category_combinations = list(combn(unique(Cluster), 2, simplify = FALSE)), .groups = 'drop') %>%
   unnest(Category_combinations) %>%
-  # 将组合转换为字符型，便于计数
   mutate(Combination = sapply(Category_combinations, paste, collapse = " + "))
 
 plot <- as.data.frame(table(result$Combination))
 write.csv(plot,"/Users/lubeifang/Desktop/PA_HP/files/GOenrich_chord_results.csv",row.names = F)
 
-# 准备chordDiagram需要的数据格式
+
 chord_data <- data.frame(from = sapply(strsplit(as.character(plot$Var1), " \\+ "), `[`, 1), 
                          to = sapply(strsplit(as.character(plot$Var1), " \\+ "), `[`, 2), 
                          freq = plot$Freq)
@@ -426,6 +422,179 @@ ggplot(num[num$Freq >2,], aes(x=reorder(Var1, -Freq), y=Freq)) +
   geom_text(aes(label=Freq), vjust=-0.5, size=3)
 
 ggsave("/Users/lubeifang/Desktop/PA_HP/Figures/F1_deg/GOenrich_number.pdf",width = 5, height = 3)
+```
+
+### permutation
+```{r}
+library(dplyr)
+library(tidyr)
+library(purrr)
+library(clusterProfiler)
+library(aPEAR)
+
+deg_list <- read.csv("/Users/lubeifang/Desktop/PA_HP/files/HP_deg_list.csv")
+GO_list_real <- read.csv("/Users/lubeifang/Desktop/PA_HP/files/GO_enrich_results.csv")
+
+# ==================== 1. Prepare Background and real data ====================
+# gene pool
+all_background_genes <- unique(PAgo_term2gene$Locus.Tag) 
+
+# deg number
+deg_summary <- deg_list %>%
+  group_by(mu_name) %>%
+  summarise(deg_count = n_distinct(Row.names), .groups = 'drop')
+
+# go number
+GO_list <- read.csv("/Users/lubeifang/Desktop/PA_HP/files/HP_GO_list_all1028.csv")
+GO_list_real <- GO_list[GO_list$cate == "all",]
+
+GO_summary <- GO_list_real %>%
+  group_by(name) %>%
+  summarise(go_count = n_distinct(Description), .groups = 'drop')
+
+# go pool
+all_go_terms <- GO_list_real[,-c(1:3)] %>%
+  distinct()
+
+GO_enrich_real <- read.csv("/Users/lubeifang/Desktop/PA_HP/files/GO_enrich_results.csv") %>%
+  distinct() %>%
+  group_by(name) %>%
+  filter(n_distinct(Cluster) > 1) %>%
+  summarise(Category_combinations = list(combn(unique(Cluster), 2, simplify = FALSE)), .groups = 'drop') %>%
+  unnest(Category_combinations) %>%
+  mutate(Combination = sapply(Category_combinations, paste, collapse = " + ")) 
+obs_results  <- as.data.frame(table(GO_enrich_real$Combination))
+  
+
+# ==================== 2. Null model running 100 iterations====================
+
+set.seed(123)
+n_permutations <- 100
+
+
+GO_enrich_list <- vector("list", n_permutations)
+pseudo_go_list <- vector("list", n_permutations)
+for (sim in 1:n_permutations) {
+  message(paste("Processing Random Simulation Universe:", sim, "/", n_permutations))
+  
+  pseudo_go <- data.frame()
+  
+  for (i in 1:(nrow(deg_summary))) {
+    mutant_id <- deg_summary$mu_name[i]
+    num_degs <- deg_summary$deg_count[i]
+    
+    # Same DEG as true dataset
+    pseudo_degs <- sample(all_background_genes, size = num_degs, replace = FALSE)
+    GO_pseudo <- enricher(pseudo_degs,
+                           TERM2GENE = PAgo_term2gene,
+                           TERM2NAME = PAgo_term2name,
+                           pvalueCutoff = 0.01)
+    
+    if (nrow(as.data.frame(GO_pseudo)) > 0) {
+      df_pseudo <- data.frame(name = mutant_id, cate = "all", as.data.frame(GO_pseudo@result))
+      pseudo_go <- rbind(pseudo_go, df_pseudo)
+    }
+  }
+  pseudo_go_list[[sim]] <- pseudo_go
+  
+  GO_enrich <- data.frame()
+  for (i in unique(pseudo_go$name)){
+    print(i)
+    test <- pseudo_go[pseudo_go$name == i,]
+      
+    if (nrow(test) > 1){
+        p <- tryCatch({
+            enrichmentNetwork(test, plotOnly = FALSE)$clusters
+        }, error = function(e) {
+            cat("Error with", i, ": ", e$message, "\n") 
+            return(NULL) 
+        })
+
+        if (!is.null(p)) {
+            GO_enrich <- rbind(GO_enrich, data.frame(name = i, as.data.frame(p)))
+        }
+    }
+  }
+  GO_enrich_list[[sim]] <- GO_enrich
+}
+
+
+
+null_links_list <- vector("list", n_permutations)
+for (sim in 1:n_permutations) {
+  go_enrich <- GO_enrich_list[[sim]]
+  
+  go_enrich_results <- go_enrich %>%
+    distinct() %>%
+    group_by(name) %>%
+    filter(n_distinct(Cluster) > 1) %>%
+    summarise(Category_combinations = list(combn(unique(Cluster), 2, simplify = FALSE)), .groups = 'drop') %>%
+    unnest(Category_combinations) %>%
+    mutate(Combination = sapply(Category_combinations, paste, collapse = " + "))
+  
+  null_links_list[[sim]] <- as.data.frame(table(go_enrich_results$Combination))
+}
+
+# ==================== 3. Calculate (P-value) ====================
+obs_results <- obs_results %>% mutate(Var1 = as.character(Var1))
+null_data_flat <- bind_rows(null_links_list, .id = "SimID") %>% mutate(Var1 = as.character(Var1))
+
+all_combinations <- unique(c(obs_results$Var1, null_data_flat$Var1))
+all_sim_ids <- as.character(1:n_permutations)
+
+if (nrow(null_data_flat) > 0) {
+  null_data_flat_aligned <- null_data_flat %>%
+    complete(SimID = all_sim_ids, Var1 = all_combinations, fill = list(Freq = 0))
+} else {
+  null_data_flat_aligned <- expand.grid(SimID = all_sim_ids, Var1 = all_combinations, stringsAsFactors = FALSE) %>%
+    mutate(Freq = 0)
+}
+
+# 4. Calculate the empirical P-value
+final_stat_results <- obs_results %>%
+  rowwise() %>%
+  mutate(
+    current_comb = Var1, 
+    p_value = mean(null_data_flat_aligned$Freq[null_data_flat_aligned$Var1 == current_comb] >= Freq),
+
+    mean_null_freq = mean(null_data_flat_aligned$Freq[null_data_flat_aligned$Var1 == current_comb])
+  ) %>%
+  ungroup()
+write.csv(final_stat_results,"/Users/lubeifang/Desktop/GO_enrich_chord_stat_results.csv",row.names = F)
+significant_links <- final_stat_results %>% filter(p_value < 0.05)
+print(significant_links)
+
+
+ggplot(final_stat_results, aes(x = mean_null_freq, y = Freq, color = p_value)) +
+  geom_point(size = 3) +
+  geom_abline(slope = 1, intercept = 0, linetype = "dashed", color = "red") +
+  labs(x = "Mean Frequency in 100 Null Simulations", y = "Observed Frequency") +
+  theme_bw() +
+  scale_color_gradient(low = "#869B7E", high = "white") 
+ggsave("/Users/lubeifang/Desktop/GO_enrich_chord_stat_scatter.pdf",width = 5, height = 4)
+
+ggplot(final_stat_results, aes(x = p_value)) +
+  geom_histogram(binwidth = 0.01, fill = "#869B7E", color = "black") +
+  labs(x = "Empirical p-value", y = "Count") +
+  theme_bw() +
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank()) +
+  geom_vline(xintercept = 0.045, linetype = "dashed", color = "#869B7E") +
+  stat_bin(binwidth = 0.01, geom = "text", aes(label = ..count..), vjust = -0.5) +
+  ylim(0,23)
+ggsave("/Users/lubeifang/Desktop/p_value_histogram.pdf",width = 7, height = 4)
+```
+
+```{r}
+plot <- significant_links[,c("Var1","Freq")]
+chord_data <- data.frame(from = sapply(strsplit(as.character(plot$Var1), " \\+ "), `[`, 1), 
+                         to = sapply(strsplit(as.character(plot$Var1), " \\+ "), `[`, 2), 
+                         freq = plot$Freq)
+
+
+pdf("/Users/lubeifang/Desktop/chord_goEnrich_all.pdf",width = 10, height=10)
+chordDiagram(chord_data, grid.col = NULL, transparency = 0.5)
+dev.off()
 ```
 
 
