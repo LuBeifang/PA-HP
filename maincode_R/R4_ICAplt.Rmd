@@ -25,7 +25,6 @@ dev.off()
 
 library(ggplot2)
 
-# 创建数据框
 data <- data.frame(
   Mutant = c("ΔrpoN-2", "ΔrpoN-1", "ΔPA2229/30-2", "ΔPA2229/30-1", 
              "ΔlasR-1", "ΔlasR-2", "ΔlasR-3", "ΔlasR-4", "ΔlasR-5"),
@@ -33,19 +32,19 @@ data <- data.frame(
   Bin = c("Bin1", "Bin1", "Bin2", "Bin2", "Bin2", "Bin2", "Bin2", "Bin2", "Bin2")
 )
 
-# 绘制柱状图
+
 ggplot(data, aes(x = Mutant, y = Activity, fill = Bin)) +
-  geom_bar(stat = "identity", width = 0.7) + # 使用 identity 绘制柱状图
+  geom_bar(stat = "identity", width = 0.7) + 
   labs(
     title = "Activity Values of Mutants",
     x = "Mutant",
     y = "Activity Value"
   ) +
-  theme_classic() + # 使用简洁主题
+  theme_classic() +
   theme(
-    axis.text.x = element_text(angle = 45, hjust = 1) # 旋转 x 轴标签以避免重叠
+    axis.text.x = element_text(angle = 45, hjust = 1)
   ) +
-  scale_fill_manual(values = c("Bin1" = "skyblue", "Bin2" = "orange")) # 自定义颜色
+  scale_fill_manual(values = c("Bin1" = "skyblue", "Bin2" = "orange"))
 
 
 
@@ -62,50 +61,49 @@ data <- data.frame(
   activity_bin = c(rep("Bin1", 4), rep("Bin2", 7), rep("Bin1", 2), rep("Bin2", 2), 
                    rep("Bin1", 2), rep("Bin2", 2))
 )
-# 绘制柱状图
+
 p1 <- ggplot(data[data$modu == "LasR",], aes(x = sample, y = activity, fill = activity_bin)) +
-  geom_bar(stat = "identity", width = 0.7) + # 绘制柱状图
-  # facet_wrap(~modu, ncol = 1, scales = "free_y") + # 按模块分成三行
+  geom_bar(stat = "identity", width = 0.7) + 
+  # facet_wrap(~modu, ncol = 1, scales = "free_y") + 
   labs(
     title = "Activity Values by Modu",
     x = "Sample",
     y = "Activity Value"
   ) +
-  theme_classic() + # 使用简洁主题
+  theme_classic() + 
   theme(
-    axis.text.x = element_text(angle = 45, hjust = 1), # 旋转 x 轴标签
-    strip.text = element_text(size = 12, face = "bold") # 设置分面标题样式
+    axis.text.x = element_text(angle = 45, hjust = 1), 
+    strip.text = element_text(size = 12, face = "bold") 
   ) +
-  scale_fill_manual(values = c("Bin1" = "skyblue", "Bin2" = "orange")) # 自定义颜色
+  scale_fill_manual(values = c("Bin1" = "skyblue", "Bin2" = "orange")) 
 p2 <- ggplot(data[data$modu == "MvfR",], aes(x = sample, y = activity, fill = activity_bin)) +
-  geom_bar(stat = "identity", width = 0.7) + # 绘制柱状图
-  # facet_wrap(~modu, ncol = 1, scales = "free_y") + # 按模块分成三行
+  geom_bar(stat = "identity", width = 0.7) +
+  # facet_wrap(~modu, ncol = 1, scales = "free_y") + 
   labs(
     title = "Activity Values by Modu",
     x = "Sample",
     y = "Activity Value"
   ) +
-  theme_classic() + # 使用简洁主题
+  theme_classic() + 
   theme(
-    axis.text.x = element_text(angle = 45, hjust = 1), # 旋转 x 轴标签
-    strip.text = element_text(size = 12, face = "bold") # 设置分面标题样式
+    axis.text.x = element_text(angle = 45, hjust = 1), 
+    strip.text = element_text(size = 12, face = "bold") 
   ) +
-  scale_fill_manual(values = c("Bin1" = "skyblue", "Bin2" = "orange")) # 自定义颜色
+  scale_fill_manual(values = c("Bin1" = "skyblue", "Bin2" = "orange"))
 
 p3 <- ggplot(data[data$modu == "RhlR",], aes(x = sample, y = activity, fill = activity_bin)) +
-  geom_bar(stat = "identity", width = 0.7) + # 绘制柱状图
-  # facet_wrap(~modu, ncol = 1, scales = "free_y") + # 按模块分成三行
+  geom_bar(stat = "identity", width = 0.7) +
   labs(
     title = "Activity Values by Modu",
     x = "Sample",
     y = "Activity Value"
   ) +
-  theme_classic() + # 使用简洁主题
+  theme_classic() + 
   theme(
-    axis.text.x = element_text(angle = 45, hjust = 1), # 旋转 x 轴标签
-    strip.text = element_text(size = 12, face = "bold") # 设置分面标题样式
+    axis.text.x = element_text(angle = 45, hjust = 1), 
+    strip.text = element_text(size = 12, face = "bold") 
   ) +
-  scale_fill_manual(values = c("Bin1" = "skyblue", "Bin2" = "orange")) # 自定义颜色
+  scale_fill_manual(values = c("Bin1" = "skyblue", "Bin2" = "orange")) 
 p <- p1/p2/p3
 ggsave("/Users/lubeifang/Desktop/3iModulon_bar.pdf",p,width=6,height=10)
 ```
@@ -158,8 +156,8 @@ activity_mean <- activity %>%
   group_by(modu, label) %>%
   summarise(mean_activity = mean(activity)) %>%
    pivot_wider(
-    names_from = label,       # 将 "label" 的值作为列名
-    values_from = mean_activity # 将 "mean_activity" 的值填充到新列
+    names_from = label,       
+    values_from = mean_activity
   )
 
 
@@ -201,9 +199,9 @@ sig %>%
   ) +
   theme_classic() + # 使用简洁主题
   theme(
-    axis.text.x = element_text(angle = 45, hjust = 1) # 旋转 x 轴标签以避免重叠
+    axis.text.x = element_text(angle = 45, hjust = 1) 
   ) +
-  scale_color_manual(values = c("positive" = "orange", "negative" = "skyblue")) # 自定义颜色
+  scale_color_manual(values = c("positive" = "orange", "negative" = "skyblue")) 
 
 ggsave("/Users/lubeifang/Desktop/HP_mutant_modu_activity_box.pdf",width=7,height=4)
 
@@ -240,13 +238,13 @@ pa0319 %>%
     x = "Modu",
     y = "Activity Value"
   ) +
-  theme_bw() + # 使用简洁主题
+  theme_bw() + 
   theme(
-    axis.text.x = element_text(angle = 45, hjust = 1), # 旋转 x 轴标签以避免重叠
+    axis.text.x = element_text(angle = 45, hjust = 1), 
     legend.position="none"
   ) +
   coord_flip() +
-  scale_fill_manual(values = c("positive" = "orange", "negative" = "skyblue")) # 自定义颜色
+  scale_fill_manual(values = c("positive" = "orange", "negative" = "skyblue")) 
 
 ggsave("/Users/lubeifang/Desktop/PA0319_modu_activity_bar.pdf",width=2.6,height=4)
 
@@ -289,7 +287,7 @@ corr_mean <- corr[abs(corr$Corr) >= 0.4,] %>%
 co <- merge(corr_sig, corr_mean, by=c("modulon","label")) %>%
    pivot_wider(
     names_from = label,
-    values_from = c(count, mean_corr)) # 将 "mean_activity" 的值填充到新列
+    values_from = c(count, mean_corr)) 
 co[is.na(co)] <- 0
 ggplot(co,aes(x=mean_corr_positive, y=-mean_corr_negative,size=count_positive + count_negative)) +
   geom_point(alpha=0.6, shape=21,fill='#95c971') +
@@ -321,10 +319,3 @@ p3<-ggplot(d,aes(x=Var1, y=Freq)) +
 p <- (p2 / p3)
 ggsave('/Users/lubeifang/Desktop/corr_number.pdf',p,height = 3.6,width = 4)
 ```
-
-
-# porpotion
-```{r}
-
-```
-

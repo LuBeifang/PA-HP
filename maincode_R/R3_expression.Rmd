@@ -170,7 +170,7 @@ log_all <- cbind(log,
              log_paper,
              log_wt)
 annotation_col <- data.frame(
-  Group = c(rep("HP",938),rep("Paper",566),rep("WT",44)) # 每组对应5列
+  Group = c(rep("HP",938),rep("Paper",566),rep("WT",44)) 
 )
 rownames(annotation_col) <- colnames(log_all)
 
@@ -585,24 +585,22 @@ for (col in colnames(exp_matrix)) {
   data <- exp_matrix[, col]
   data_0 <- data
   data <- data[data > 0]
-  
-  # 定义一个安全拟合函数，发生错误时返回 NULL
+
   safe_fit <- function(data, dist) {
     tryCatch(
       fitdist(data, dist),
-      error = function(e) NULL  # 如果拟合失败，返回 NULL
+      error = function(e) NULL  
     )
   }
   
-  # 安全拟合分布
-  fit_norm <- safe_fit(data_0, "norm")    # 正态分布
-  fit_exp <- safe_fit(data, "exp")       # 指数分布
-  fit_lnorm <- safe_fit(data, "lnorm")   # 对数正态分布
-  fit_weibull <- safe_fit(data, "weibull") # 协马分布
-  fit_cauchy <- safe_fit(data_0, "cauchy") # 柯西分布
-  fit_gamma <- safe_fit(data, "gamma")   # 伽马分布
+  fit_norm <- safe_fit(data_0, "norm")   
+  fit_exp <- safe_fit(data, "exp")       
+  fit_lnorm <- safe_fit(data, "lnorm")   
+  fit_weibull <- safe_fit(data, "weibull") 
+  fit_cauchy <- safe_fit(data_0, "cauchy") 
+  fit_gamma <- safe_fit(data, "gamma")   
   
-  # 从拟合对象中提取 AIC，如果拟合失败则为 NA
+
   fit_df <- rbind(fit_df, data.frame(
     Sample = col,
     norm_aic = if (!is.null(fit_norm)) fit_norm$aic else NA,
@@ -638,21 +636,21 @@ for (row in rownames(exp_matrix)) {
   data_0 <- data
   data <- data[data > 0]
   
-  # 定义一个安全拟合函数，发生错误时返回 NULL
+
   safe_fit <- function(data, dist) {
     tryCatch(
       fitdist(data, dist),
-      error = function(e) NULL  # 如果拟合失败，返回 NULL
+      error = function(e) NULL  
     )
   }
   
-  # 安全拟合分布
-  # fit_norm <- safe_fit(data_0, "norm")    # 正态分布
-  fit_exp <- safe_fit(data, "exp")       # 指数分布
-  fit_lnorm <- safe_fit(data, "lnorm")   # 对数正态分布
-  fit_weibull <- safe_fit(data, "weibull") # 协马分布
-  # fit_cauchy <- safe_fit(data_0, "cauchy") # 柯西分布
-  fit_gamma <- safe_fit(data, "gamma")   # 伽马分布
+
+  # fit_norm <- safe_fit(data_0, "norm")   
+  fit_exp <- safe_fit(data, "exp")     
+  fit_lnorm <- safe_fit(data, "lnorm")   
+  fit_weibull <- safe_fit(data, "weibull")
+  # fit_cauchy <- safe_fit(data_0, "cauchy") 
+  fit_gamma <- safe_fit(data, "gamma")  
   
   # 从拟合对象中提取 AIC，如果拟合失败则为 NA
   fit_df <- rbind(fit_df, data.frame(
@@ -680,50 +678,4 @@ ggplot(melted_fit_df, aes(x = AIC, y = Distribution, fill = Distribution)) +
   scale_fill_brewer(palette = "Set3")
 ggsave("/Users/lubeifang/Desktop/PA_HP/figures/F3_exp/gene_fit.pdf",width = 6,height = 4)
 table(melted_fit_df[!is.na(melted_fit_df$AIC),]$Distribution)
-```
-
-```{r}
-sorted_data <- apply(log, 2, sort, decreasing = TRUE)
-sorted_data <- as.data.frame(sorted_data)
-sorted_data$index <- 1:nrow(sorted_data)
-long_data <- melt(sorted_data, value.name = "value", id.vars = "index")
-
-ggplot(long_data, aes(x = value, y = variable)) +
-  geom_density_ridges() +
-  scale_fill_gradientn(colors = c("purple", "orange", "yellow")) +
-  theme_ridges() +
-  labs(
-    title = "Column-wise Sorted Distribution",
-    x = "Values",
-    y = "Columns"
-  )
-ggsave("/Users/lubeifang/Desktop/PA_HP/figures/F3_exp/exp_density.pdf",width = 6,height = 20)
-
-
-# library(nortest)
-# nd_df <- data.frame()
-# for (col in colnames(log)) {
-#   p_value <- ad.test(log[, col])$p.value
-#   s <- ad.test(log[, col])$statistic[[1]]
-#   nd_df <- rbind(nd_df, data.frame(Sample = col, statistic = s, p_value = p_value))
-# }
-
-fit_df <- data.frame()
-library(fitdistrplus)
-for (col in colnames(exp_matrix)) {
-  data <- exp_matrix[, col]
-  data_0 <- data
-  data <- data[data > 0]
-  fit_norm <- fitdist(data_0, "norm")    # 正态分布
-  fit_exp <- fitdist(data, "exp")     # 指数分布
-  fit_lnorm <- fitdist(data, "lnorm") # 对数正态分布
-  fit_weibull <- fitdist(data, "weibull") # 伽马分布
-  fit_cauchy <- fitdist(data_0, "cauchy") # 柯西分布
-  fit_df <- rbind(fit_df, data.frame(Sample = col,
-                                     norm_aic = fit_norm$aic,
-                                     exp_aic = fit_exp$aic,
-                                     lnorm_aic = fit_lnorm$aic,
-                                     weibull_aic = fit_weibull$aic,
-                                     cauchy_aic = fit_cauchy$aic))
-}
 ```

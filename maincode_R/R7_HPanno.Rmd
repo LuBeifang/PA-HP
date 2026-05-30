@@ -2,21 +2,32 @@
 
 ## HP in module
 ```{r}
+library(ggVennDiagram)
+library(ggplot2)
 HP <- read.csv("/Users/lubeifang/Desktop/PA_HP/files/HP_mu.csv")
-data <- read.csv("/Users/lubeifang/Desktop/HP_430_iModulon.csv")
+data <- read.csv("/Users/lubeifang/Desktop/PA_HP/files/HP_430_iModulon.csv")
+HP_anno <- read.csv("/Users/lubeifang/Desktop/all.csv")
 
-merged_data <- merge(HP, data, by.y = "locus", by.x = "HP2080")
-length(unique(merged_data$HP2080))
+x = list(a=data$locus,
+         b=HP_anno[HP_anno$ICA.perspective.1 != "#N/A",]$HP.genes,
+         c=HP_anno[HP_anno$ICA.perspective.2 != "#N/A",]$HP.genes)
+ggVennDiagram(x, category.names = c("HP embedded in Modules", "ICA perspective 1", "ICA perspective 2"),
+              label = "count") +
+                scale_fill_gradient(low = "white", high = "lightblue")
+ggsave("/Users/lubeifang/Desktop/Module_anno_venn.pdf", width = 3, height = 3)
 ```
 
 ## Compare HP in differnt annotation
 ```{r}
 library(UpSetR)
-HP_anno <- read.csv("/Users/lubeifang/Desktop/HP_anno_final.csv")
+library(ggVennDiagram)
 x = list(a=HP_anno[HP_anno$GO.term != "#N/A",]$HP.genes,
          b=HP_anno[HP_anno$Virulence.pathway != "#N/A",]$HP.genes,
-         b=HP_anno[HP_anno$ICA.perspective.1 != "#N/A",]$HP.genes,
-         b=HP_anno[HP_anno$ICA.perspective.2 != "#N/A",]$HP.genes)
+         c=HP_anno[HP_anno$ICA.perspective.1 != "#N/A",]$HP.genes,
+         d=HP_anno[HP_anno$ICA.perspective.2 != "#N/A",]$HP.genes)
+# total number
+length(unique(c(x$a, x$b, x$c, x$d)))
+length(unique(x$d))
 ggVennDiagram(x, category.names = c("GO term", "Virulence pathway", "ICA perspective 1", "ICA perspective 2"),
               label = "count") +
                 scale_fill_gradient(low = "white", high = "#eb6483")

@@ -251,15 +251,15 @@ allround <- results %>%
   filter(is_show) %>%
   group_by(mu_name) %>%
   summarise(pathway_count = sum(is_significant)) %>%
-  filter(pathway_count >= 2)
+  filter(pathway_count > 2)
 
 
 ## Regulate only one pathway
-specialized <- data_with_signif %>%
-  filter(is_significant) %>%
+specialized <- results %>%
+  filter(is_show) %>%
   group_by(mu_name) %>%
-  mutate(ratio = overlap_count/pathway_total) %>%
-  filter(ratio > 0.4)
+  summarise(pathway_count = sum(is_significant)) %>%
+  filter(pathway_count == 2)
 unique(specialized$mu_name)
 ```
 
@@ -349,8 +349,8 @@ pdf("/Users/lubeifang/Desktop/UpSetR_pathway.pdf", width = 6, height = 4)
 upset(
   fromList(x), 
   order.by = "freq",         
-  nsets = 7,               
-  nintersects = 10,        
+  nsets = 15,               
+  nintersects = 20,        
   main.bar.color = "lightblue", 
   sets.bar.color = "skyblue",
   matrix.color = "lightblue3",

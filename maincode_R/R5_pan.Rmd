@@ -304,6 +304,9 @@ p2<-ggplot(plot_data, aes(x=cate,y=as.numeric(dN_over_dS),fill=cate)) +
   coord_flip()
 p <- p1/p2
 ggsave("/Users/lubeifang/Desktop/snp_dnds.pdf",p,width = 5,height = 6)
+
+
+length(HP_data[HP_data$dN_over_dS > 1,]$product)
 ```
 
 # xisF4 cluster
@@ -498,9 +501,9 @@ st_geo <- merge(st_geo, geo_count[,c(1,3)], by.x="GeographicLocation",by.y="Var1
 
 location_distribution <- st_geo[st_geo$V3 != "-", ] %>%
   group_by(ST, geo.y) %>%
-  summarise(count = n(), .groups = "drop") %>% # 计算每个 geo 内的 count
-  group_by(ST) %>% # 按 st 分组
-  mutate(freq = count / sum(count)) %>% # 在每个 st 的范围内计算 freq
+  summarise(count = n(), .groups = "drop") %>%
+  group_by(ST) %>% 
+  mutate(freq = count / sum(count)) %>% 
   ungroup()
 
 
@@ -512,9 +515,9 @@ node_positions <- node_positions[,c(3,1,2)]
 
 plot_data <- location_distribution %>%
   pivot_wider(
-    names_from = geo.y,  # 将地理位置展开为列
-    values_from = freq,                # 使用频率作为列的值
-    values_fill = 0                    # 缺失值填充为 0
+    names_from = geo.y,  
+    values_from = freq,              
+    values_fill = 0                  
   ) %>%
   left_join(node_positions, by = c("ST" = "name"))
 
@@ -593,12 +596,11 @@ location_distribution <- st_geo[st_geo$ST.x != "-",] %>%
 world <- ne_countries(scale = "medium", returnclass = "sf")
 
 country_coords <- world %>%
-  mutate(centroid = st_centroid(geometry)) %>% # 计算质心
-  mutate(lon = st_coordinates(centroid)[, 1], # 提取经度
-         lat = st_coordinates(centroid)[, 2]) # 提取纬度
+  mutate(centroid = st_centroid(geometry)) %>% 
+  mutate(lon = st_coordinates(centroid)[, 1], 
+         lat = st_coordinates(centroid)[, 2]) 
 country_coords <- country_coords[,c("name_long", "lon", "lat")] %>%
-  st_drop_geometry() # 移除几何信息，返回普通数据框
-
+  st_drop_geometry()
 
 country_count <- data.frame(table(location_distribution$geo.y))
 geo_coordinates  <- country_coords %>%
@@ -614,9 +616,9 @@ geo_coordinates$geo.y <- geo_coordinates$geo
 
 plot_data <- location_distribution %>%
   pivot_wider(
-    names_from = ST.x,  # 将地理位置展开为列
-    values_from = freq,                # 使用频率作为列的值
-    values_fill = 0                    # 缺失值填充为 0
+    names_from = ST.x, 
+    values_from = freq,               
+    values_fill = 0                  
   ) %>%
   left_join(geo_coordinates, by = "geo.y") %>%
   subset(geo.y != "no_info" & geo.y != "others")  
@@ -624,17 +626,17 @@ plot_data <- location_distribution %>%
 
 library(ggplot2)
 library(ggspatial)
-library(ggforce) # 用于 geom_scatterpie
+library(ggforce)
 library(MetBrewer)
 
 ggplot(data = world) +
-  geom_sf(fill = "antiquewhite", color = "gray50") + # 地图背景设置
+  geom_sf(fill = "antiquewhite", color = "gray50") + 
   geom_scatterpie(
-    aes(x = lon, y = lat, group = geo.y, r = 20), # r 控制饼图大小
+    aes(x = lon, y = lat, group = geo.y, r = 20), 
     data = plot_data,
     cols = unique(location_distribution$ST.x),
     alpha = 0.8,
-    color = "grey", # 饼图边框颜色
+    color = "grey", 
     cex = 0.2
   ) +
   coord_sf() +
@@ -646,11 +648,8 @@ ggplot(data = world) +
   geom_text(
     aes(x = lon, y = lat, label = geo.y),
     data = plot_data,
-    size = 3, # 增加标签字体大小
-    # color = "darkred", # 标签颜色
-    nudge_y = 12, # 调整标签位置
-    # fontface = "bold", # 加粗字体
-    # family = "Arial"
+    size = 3, 
+    nudge_y = 12
   ) +
   scale_fill_manual(values= MetBrewer::met.brewer("Cassatt2", length(unique(location_distribution$ST.x)))) +
   theme(
@@ -659,9 +658,9 @@ ggplot(data = world) +
     legend.text = element_text(size = 10),
     panel.background = element_rect(fill = "lightblue", color = NA)
   ) +
-  annotation_scale(location = "bl", width_hint = 0.5) + # 添加比例尺
+  annotation_scale(location = "bl", width_hint = 0.5) +
   annotation_north_arrow(location = "tr", which_north = "true", 
-                         style = north_arrow_fancy_orienteering) # 添加指南针
+                         style = north_arrow_fancy_orienteering)
 # ggsave("/Users/lubeifang/Desktop/b.pdf",width = 10,height = 8.5)
 ```
 
