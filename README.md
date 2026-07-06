@@ -2,7 +2,7 @@
 
 This GitHub repository contains all the custom scripts and shell commands used in our paper,
 
-**Pan-genome Wide Functional Characterization of Hypothetical Proteins Reveals Module-specific Evolution Patterns in Pseudomonas aeruginosa**
+**Characterization of Hypothetical Proteins Reveals Function Modules and Virulence Factors in Pseudomonas aeruginosa**
 
 ## Graphic abstract
 ![abstract](abstract/annotation.png)
@@ -10,9 +10,9 @@ This GitHub repository contains all the custom scripts and shell commands used i
 ## Data available
 Our HP functional annotation data is available via a GUI (https://jiadhuang0417.shinyapps.io/PA_HP/)
 
-All raw sequence files are uploaded to NCBI (GEO:[GSE256222](https:)).
+All raw sequence files are uploaded to NCBI (GEO:[GSE256222](https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE256222)).
 
-Processed DEG files and ICA matrix are uploaded to [Zenodo](https://doi.org/10.5281/zenodo.18872828).
+Processed DEG files and ICA matrix are uploaded to [Zenodo](https://doi.org/10.5281/zenodo.20453783).
 
 If you have any further requests, please contact xindeng@cityu.edu.hk. We are pleased to help!
 
